@@ -1,6 +1,6 @@
 /* Tomas Carranza Echaniz
 *  12/19/2025
-*  This program is a cyclical student database that uses linked lists. It is for showcasing the functionality of the
+*  This program is a student database that uses linked lists. It is for showcasing the functionality of the
 *  Node.h and Node.cpp files. You can ADD a new student, which will be added after the current node. You can DELETE
 *  the student, which will move you to the next student. You can go to the NEXT student, and PRINT the student's data.
 *  You can also PRINT ALL the students at once, or print the AVERAGE of all their GPAs. You can also ask for HELP,
@@ -30,23 +30,38 @@ void AllCaps(char* word) {
     }
 }
 
-//creates a new student and a new node pointing to it, which is inserted into the linked list based on id order
-void addNode(Node*& first) {
-    char name[255]; //the name to be split into the first and last name
+//for getting the id of a student since that happens twice
+int getID() {
+    int id = 0;
+    while (true) {
+        cout << "\n> ";
+        cin >> id; //gets the id integer
+        CinIgnoreAll(true); //removes the newline character or invalid input
+        if (cin) { //return the id and end the loop if input was valid
+            return id;
+        } else { //otherwise give error message and try again
+            cout << "\nID must be an integer.";
+        }
+    }
+}
+
+//creates a new student and a new node pointing to it
+Node* createStudent() {
     char firstname[255];
     char lastname[255];
     int id;
     float gpa;
-    
+
     //get the student's first (and middle if applicable) names
     cout << "\nEnter first (and middle) name for new student.";
     bool continuing = true; //continues until valid input is given
     while (continuing) {
         cout << "\n> ";
-        cin.getline(name, 255);
+        cin.getline(firstname, 255);
         if (cin) { //end loop if input was valid
             continuing = false;
-        } else { //error message
+        }
+        else { //error message
             cout << "\nInput too long.";
         }
         CinIgnoreAll(); //clear any faulty or extra input given
@@ -57,7 +72,7 @@ void addNode(Node*& first) {
     continuing = true; //continues until valid input is given
     while (continuing) {
         cout << "\n> ";
-        cin.getline(name, 255);
+        cin.getline(lastname, 255);
         if (cin) { //end loop if input was valid
             continuing = false;
         }
@@ -66,21 +81,11 @@ void addNode(Node*& first) {
         }
         CinIgnoreAll(); //clear any faulty or extra input given
     }
-    
+
     //get the student's id
     cout << "\nEnter " << firstname << "'s student ID.";
-    continuing = true; //continues until valid input is given
-    while (continuing) {
-        cout << "\n> ";
-        cin >> id; //gets the id integer
-        if (cin) { //end loop if input was valid
-            continuing = false;
-        } else { //otherwise give error message
-            cout << "\nID must be an integer.";
-        }
-        CinIgnoreAll(true); //removes the newline character or invalid input
-    }
-    
+    id = getID();
+
     cout << "\nEnter " << firstname << "'s GPA.";
     continuing = true; //continues until valid input is given
     while (continuing) {
@@ -88,25 +93,32 @@ void addNode(Node*& first) {
         cin >> gpa; //gets the gpa float
         if (cin) { //end loop if valid input was given
             continuing = false;
-        } else { //error message otherwise
+        }
+        else { //error message otherwise
             cout << "\nGPA must be a float.";
         }
         CinIgnoreAll(true); //removes the newline character of invalid input
     }
-    
+
     //creates a new student using the given data
     Student* student = new Student(&firstname[0], &lastname[0], id, gpa);
-    //create a new node pointing to the new student
-    Node* node = new Node(student);
-    
-    if (first == NULL) { //if there are no nodes yet, makes the new node the start
-        first = node;
-    } else { //otherwise, we make the node point to the node after current, and put it after the current node
-        node->setNext(current->getNext());
-        current->setNext(node);
+    //create and return a new node pointing to the new student
+    return new Node(student);
+}
+
+//creates a new student node and adds it into the linked list according to id order
+void addNode(Node*& current, Node* newguy) {
+    if (newguy == NULL) {
+        newguy = createStudent();
+    }
+    if (current == NULL) {
+        current = newguy;
+    } else if (current->getNext()->getStudent()->getID() > newguy->getStudent()->getID()) {
+        newguy->setNext(current->getNext());
+        current->setNext(newguy);
     }
     
-    cout << "\nSuccessfully added " << firstname; //success message
+    cout << "\nSuccessfully added " << newguy->getStudent()->getName(0); //success message
     if (current->getNext() != current) { //if it isn't the only node, we print which node we put it after (current)
         cout << " after " << current->getStudent()->getName(0);
     }
@@ -121,30 +133,35 @@ void printStudent(Student* student, bool newline = true) {
     cout << student->getName(0) << " " << student->getName(1) << " (" << student->getID() << ") - GPA of " << student->getGPA();
 }
 
-//deletes the current node, and bridges the gap created as a result
-void deleteNode(Node*& current, int id, bool first = 0) {
+//deletes the current node, and returns the node after the given one in order to bridge the gap created as a result (we need to pass by reference so we can nullify it from here)
+Node* deleteNode(Node*& current, int id = 0, bool first = 0) {
     if (current == NULL) { //return if we ran out of students
-        if (first) {
+        if (first) { //if it's the first one that means there is actually literally nobody to delete
             cout << "\nThere are no students to delete. (type ADD for add)";
-        } else {
+        } else { //if it's not the first check, this is after the last node and there were no matching students along the way
             cout << "\nThere are no students with ID " << id << ".";
         }
-        return;
+        return NULL;
+    }
+    if (first) { //get the id if it's the first student so we know who to delete
+        id = getID();
     }
     
-    
-    cout << "\nSuccessfully deleted " << current->getStudent()->getName(0) << "!"; //success message
-    if (current == current->getNext()) { //if there's only one node, it's pointing to itself, and we just nullify the current node since there will be no more nodes to point to
-        current = NULL;
+    //if the current student node has the needed id, we found something to delete!
+    if (current->getStudent()->getID() == id) {
+        cout << "\nSuccessfully deleted " << current->getStudent()->getName(0) << "!"; //success message
+        delete current; //does the deleting
+        if (first) { //nullify current node if it's the first one so int main is updated since it's present there as well
+            current = NULL;
+            cout << "\nThere are no students left."; //prints status message
+        }
+        return current->getNext();
     } else {
-        goNext(current); //goes to the next node, printing the new current node's data in the process
+        Node* next = current->getNext(); //I can't just put this all in one line, I have to define this and then pass it into the next call, because getNext() returns a Node*, but I need to pass a Node*&, but I can't just pass a pointer I got from a function for that. "cannot bind non-const lvalue reference of type ‘Node*&’ to an rvalue of type ‘Node*’"
+        current->setNext(deleteNode(next, id)); //sets next to whatever the next recursive call returns, usually the next node again
     }
-    Node* todel = previous->getNext(); //gets the node to delete, so that we can get the node after it AND delete the node without losing access to it
-    previous->setNext(todel->getNext()); //bridges the gap caused by deleting the node; previous node now points to the node after the one that got deleted
-    delete todel; //deletes the node
-    if (current == NULL) { //prints if we deleted the last node/student combo
-        cout << "\nThere are no students left.";
-    }
+
+    return current;
 }
 
 //prints the average gpa of all the students
@@ -197,7 +214,7 @@ int main() {
         if (!strcmp(command, "ADD")) { //add student
             addNode(first);
         } else if (!strcmp(command, "DELETE")) { //delete current student
-            deleteNode(first);
+            deleteNode(first, 0, true);
         } else if (!strcmp(command, "PRINT")) { //print all students
             printAll(first, true);
         } else if (!strcmp(command, "AVERAGE")) { //print average gpa of all students
