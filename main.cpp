@@ -1,10 +1,9 @@
 /* Tomas Carranza Echaniz
-*  12/19/2025
-*  This program is a student database that uses linked lists. It is for showcasing the functionality of the
-*  Node.h and Node.cpp files. You can ADD a new student, which will be added after the current node. You can DELETE
-*  the student, which will move you to the next student. You can go to the NEXT student, and PRINT the student's data.
-*  You can also PRINT ALL the students at once, or print the AVERAGE of all their GPAs. You can also ask for HELP,
-*  which will print all the valid commands, or QUIT the program.
+*  1/16/2026
+*  This program is a student database that uses a linked list, using my partner's Node.h and Node.cpp files. You can
+*  ADD a new student, which will be added to the list in increasing ID order. You can DELETE the student, and PRINT
+*  all the students' data. You can also print the AVERAGE of all their GPAs, ask for HELP to print all the valid
+*  commands, or QUIT the program.
 */
 
 #include <iostream>
@@ -106,20 +105,31 @@ Node* createStudent() {
     return new Node(student);
 }
 
-//creates a new student node and adds it into the linked list according to id order
-void addNode(Node*& current, Node* newguy) {
-    if (newguy == NULL) {
+//creates a new student node and adds it into the linked list according to increasing id order
+void addNode(Node*& current, Node* newguy = NULL) {
+    if (newguy == NULL) { //if we just called addNode, the person we're adding will be NULL so we must set them at the start
         newguy = createStudent();
+        if (current != NULL && newguy->getStudent()->getID() < current->getStudent()->getID()) { //if the new student's id is less than the current first one, we put the new node at the start
+            newguy->setNext(current); //makes the new first node point to the old first node
+            current = newguy; //update main's starting node
+            cout << "\nSuccessfully added " << newguy->getStudent()->getName(0) << " before " << newguy->getNext()->getStudent()->getName(0) << "!"; //success message
+            return;
+        }
     }
-    if (current == NULL) {
-        current = newguy;
-    } else if (current->getNext()->getStudent()->getID() > newguy->getStudent()->getID()) {
-        newguy->setNext(current->getNext());
-        current->setNext(newguy);
+    if (current == NULL) { //I always check the following node, so we will only reach this if we input a null node from main, meaning we have no nodes
+        current = newguy; //thus, we just set the node in main to the new student!
+    //if we're at the end of the linked list (meaning the next node is null), or the next one has a greater ID, meaning we're at the point where we can place the new node in proper ID order
+    } else if (current->getNext() == NULL || current->getNext()->getStudent()->getID() > newguy->getStudent()->getID()) {
+        newguy->setNext(current->getNext()); //since the new student will be the new next node, we make it point to the old next node
+        current->setNext(newguy); //make the node we're at point to the new next node
+    } else { //otherwise keep checking for a valid position; continue the loop!
+        Node* next = current->getNext(); //I can't just put this all in one line, I have to define this and then pass it into the next call, because getNext() returns a Node*, but I need to pass a Node*&, but I can't just pass a pointer I got from a function for that. "cannot bind non-const lvalue reference of type ‘Node*&’ to an rvalue of type ‘Node*’"
+        addNode(next, newguy); //check the next node and carry over the new student's data
+        return; //returns because we didn't add the student yet
     }
     
-    cout << "\nSuccessfully added " << newguy->getStudent()->getName(0); //success message
-    if (current->getNext() != current) { //if it isn't the only node, we print which node we put it after (current)
+    cout << "\nSuccessfully added " << newguy->getStudent()->getName(0); //common beginning of success message
+    if (current != newguy) { //if it isn't the only node, we print which node we put it after (current)
         cout << " after " << current->getStudent()->getName(0);
     }
     cout << "!"; //exclamation mark!
@@ -130,7 +140,7 @@ void printStudent(Student* student, bool newline = true) {
     if (newline) { //prints the new line if we need to
         cout << "\n";
     } //prints all the student's data
-    cout << student->getName(0) << " " << student->getName(1) << " (" << student->getID() << ") - GPA of " << student->getGPA();
+    cout << student->getName(0) << " " << student->getName(1) << " (" << student->getID() << ") - GPA of " << fixed << setprecision(2) << student->getGPA();
 }
 
 //deletes the current node, and returns the node after the given one in order to bridge the gap created as a result (we need to pass by reference so we can nullify it from here)
@@ -144,21 +154,26 @@ Node* deleteNode(Node*& current, int id = 0, bool first = 0) {
         return NULL;
     }
     if (first) { //get the id if it's the first student so we know who to delete
+        cout << "\nEnter ID of student to delete.";
         id = getID();
     }
     
     //if the current student node has the needed id, we found something to delete!
     if (current->getStudent()->getID() == id) {
         cout << "\nSuccessfully deleted " << current->getStudent()->getName(0) << "!"; //success message
+        Node* next = current->getNext(); //stores next in case we delete current so we can access it in that situation
         delete current; //does the deleting
-        if (first) { //nullify current node if it's the first one so int main is updated since it's present there as well
-            current = NULL;
-            cout << "\nThere are no students left."; //prints status message
+        if (first) { //update current node if it's the first one so int main is updated since the first node is there as well
+            current = next;
         }
-        return current->getNext();
+        return next; //return the next node so we can relink the list in case of successful deletion
     } else {
-        Node* next = current->getNext(); //I can't just put this all in one line, I have to define this and then pass it into the next call, because getNext() returns a Node*, but I need to pass a Node*&, but I can't just pass a pointer I got from a function for that. "cannot bind non-const lvalue reference of type ‘Node*&’ to an rvalue of type ‘Node*’"
+        Node* next = current->getNext(); //I have to define next first for same reasons as when calling next recursive call in addNode
         current->setNext(deleteNode(next, id)); //sets next to whatever the next recursive call returns, usually the next node again
+    }
+
+    if (first && current == NULL) { //prints if we have deleted the last student in the database
+        cout << "\nThere are no students left.";
     }
 
     return current;
@@ -181,7 +196,7 @@ void average(Node* current, float sum = 0, int count = 0) {
 //print all the students' data
 void printAll(Node* current, bool first = false) {
     if (current == NULL) { //return if we ran out of students to print
-        if (!first) { //print error message if there are no students to print
+        if (first) { //print error message if there are no students to print
             cout << "\nThere are no students to print. (type ADD for add)";
         }
         return;
@@ -220,7 +235,7 @@ int main() {
         } else if (!strcmp(command, "AVERAGE")) { //print average gpa of all students
             average(first);
         } else if (!strcmp(command, "HELP")) { //print all valid command words
-            cout << "\nYour command words are:\nADD\nDELETE\nNEXT\nPRINT\nAVERAGE\nHELP\nQUIT";
+            cout << "\nYour command words are:\nADD\nDELETE\nPRINT\nAVERAGE\nHELP\nQUIT";
         } else if (!strcmp(command, "QUIT")) { //quit the program
             continuing = false; //leave the main player loop
         } else { //give error message if the user typed something unacceptable
@@ -230,8 +245,14 @@ int main() {
         CinIgnoreAll(); //ignore any invalid or extra input that may have been typed this time
     }
 
-    //says bye to the user
+    //bids the user adieu
     cout <<"\nIn case I don't see ya, good afternoon, good evening, and good night!.\n";
 
-    //delete all the nodes
+    //deletes all the code for good practice, iterates until the node is null meaning they're all deleted and goes to the stored next node at the end of each iteration
+
+    Node* next = NULL; //stores the next node temporarily so we can delete the current one
+    for (; first != NULL; first = next) { //this is the same as using a while loop but it looks cooler :)
+        next = first->getNext(); //go to the next one
+        delete first; //deletes the node
+    }
 }
