@@ -136,7 +136,7 @@ void addNode(Node*& current, Node* newguy = NULL) {
         newguy->setNext(current->getNext()); //since the new student will be the new next node, we make it point to the old next node
         current->setNext(newguy); //make the node we're at point to the new next node
     } else { //otherwise keep checking for a valid position; continue the loop!
-        Node* next = current->getNext(); //I can't just put this all in one line, I have to define this and then pass it into the next call, because getNext() returns a Node*, but I need to pass a Node*&, but I can't just pass a pointer I got from a function for that. "cannot bind non-const lvalue reference of type �Node*&� to an rvalue of type �Node*�"
+        Node* next = current->getNext(); //I can't just put this all in one line, I have to define this and then pass it into the next call, because getNext() returns a Node*, but I need to pass a Node*&, but I can't just pass a pointer I got from a function for that. "cannot bind non-const lvalue reference of type 'Node*&' to an rvalue of type 'Node*'"
         addNode(next, newguy); //check the next node and carry over the new student's data
         return; //returns because we didn't add the student yet
     }
