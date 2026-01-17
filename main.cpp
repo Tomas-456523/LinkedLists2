@@ -35,17 +35,18 @@ int getID() {
     while (true) {
         cout << "\n> ";
         cin >> id; //gets the id integer
-        CinIgnoreAll(true); //removes the newline character or invalid input
         if (cin) { //return the id and end the loop if input was valid
+            CinIgnoreAll(true); //removes the newline character after valid integer input
             return id;
         } else { //otherwise give error message and try again
             cout << "\nID must be an integer.";
         }
+        CinIgnoreAll(); //removes the newline character or invalid input
     }
 }
 
-//creates a new student and a new node pointing to it
-Node* createStudent() {
+//creates a new student and a new node pointing to it, needs start of linked list as input so we can make sure to not repeat IDs, as that would lead to annoying behavior, such as needing to delete the first one before being able to delete the second one that uses that ID
+Node* createStudent(Node* start) {
     char firstname[255];
     char lastname[255];
     int id;
@@ -83,7 +84,19 @@ Node* createStudent() {
 
     //get the student's id
     cout << "\nEnter " << firstname << "'s student ID.";
-    id = getID();
+    continuing = true; //continues until valid input is given
+    while (continuing) {
+        id = getID(); //gets the id using the already established id getting function, "\n> " is provided there
+        continuing = false; //assumes valid input to start since getID can return no faulty input
+        //iterates through the linked list using current which starts at starts and goes to the next one each iteration until it meets a null node, that being the end
+        for (Node* current = start; current != NULL; current = current->getNext()) { //in order to check if the currently considered ID is taken for reasons stated above the createStudent function
+            if (current->getStudent()->getID() == id) { //if the IDs match that's bad
+                continuing = true; //we keep continuing and get a new ID from the user because the IDs conflict
+                cout << "\nID " << id << " is taken by " << current->getStudent()->getName(0) << "."; //error message; shows who is causing the conflict
+                break; //break since we know there's a conflict alredy so more checks would waste valuable time
+            }
+        }
+    }
 
     cout << "\nEnter " << firstname << "'s GPA.";
     continuing = true; //continues until valid input is given
@@ -108,7 +121,7 @@ Node* createStudent() {
 //creates a new student node and adds it into the linked list according to increasing id order
 void addNode(Node*& current, Node* newguy = NULL) {
     if (newguy == NULL) { //if we just called addNode, the person we're adding will be NULL so we must set them at the start
-        newguy = createStudent();
+        newguy = createStudent(current);
         if (current != NULL && newguy->getStudent()->getID() < current->getStudent()->getID()) { //if the new student's id is less than the current first one, we put the new node at the start
             newguy->setNext(current); //makes the new first node point to the old first node
             current = newguy; //update main's starting node
@@ -123,7 +136,7 @@ void addNode(Node*& current, Node* newguy = NULL) {
         newguy->setNext(current->getNext()); //since the new student will be the new next node, we make it point to the old next node
         current->setNext(newguy); //make the node we're at point to the new next node
     } else { //otherwise keep checking for a valid position; continue the loop!
-        Node* next = current->getNext(); //I can't just put this all in one line, I have to define this and then pass it into the next call, because getNext() returns a Node*, but I need to pass a Node*&, but I can't just pass a pointer I got from a function for that. "cannot bind non-const lvalue reference of type ‘Node*&’ to an rvalue of type ‘Node*’"
+        Node* next = current->getNext(); //I can't just put this all in one line, I have to define this and then pass it into the next call, because getNext() returns a Node*, but I need to pass a Node*&, but I can't just pass a pointer I got from a function for that. "cannot bind non-const lvalue reference of type ï¿½Node*&ï¿½ to an rvalue of type ï¿½Node*ï¿½"
         addNode(next, newguy); //check the next node and carry over the new student's data
         return; //returns because we didn't add the student yet
     }
@@ -246,7 +259,7 @@ int main() {
     }
 
     //bids the user adieu
-    cout <<"\nIn case I don't see ya, good afternoon, good evening, and good night!.\n";
+    cout <<"\nIn case I don't see ya, good afternoon, good evening, and good night!\n";
 
     //deletes all the code for good practice, iterates until the node is null meaning they're all deleted and goes to the stored next node at the end of each iteration
 
