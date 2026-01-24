@@ -268,5 +268,4 @@ int main() {
         next = first->getNext(); //go to the next one
         delete first; //deletes the node
     }
-
 }
