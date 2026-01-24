@@ -261,11 +261,12 @@ int main() {
     //bids the user adieu
     cout <<"\nIn case I don't see ya, good afternoon, good evening, and good night!\n";
 
-    //deletes all the code for good practice, iterates until the node is null meaning they're all deleted and goes to the stored next node at the end of each iteration
+    //deletes all the nodes for good practice, iterates until the node is null meaning they're all deleted and goes to the stored next node at the end of each iteration
 
     Node* next = NULL; //stores the next node temporarily so we can delete the current one
     for (; first != NULL; first = next) { //this is the same as using a while loop but it looks cooler :)
         next = first->getNext(); //go to the next one
         delete first; //deletes the node
     }
+
 }
